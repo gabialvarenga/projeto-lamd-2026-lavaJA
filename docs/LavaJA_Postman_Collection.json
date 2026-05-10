@@ -1,0 +1,317 @@
+{
+  "info": {
+    "name": "LavaJÁ",
+    "_postman_id": "lavaja-collection",
+    "description": "Coleção completa de endpoints do backend REST do LavaJÁ.\nBase URL: http://localhost:3000/api\n\nAutenticação: rotas protegidas exigem o header x-usuario-id com o UUID do usuário.\nOs IDs são salvos automaticamente nas variáveis após criar os usuários.\n\nOrdem de execução recomendada:\n1. POST Criar cliente → salva clienteId\n2. POST Criar lavador → salva lavadorId\n3. POST Cadastrar veículo → salva veiculoId\n4. POST Criar solicitação → salva solicitacaoId\n5. PATCH Aceitar → PATCH Iniciar → PATCH Concluir",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl",       "value": "http://localhost:3000/api" },
+    { "key": "clienteId",     "value": "" },
+    { "key": "lavadorId",     "value": "" },
+    { "key": "veiculoId",     "value": "" },
+    { "key": "solicitacaoId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "url": "http://localhost:3000/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Usuários",
+      "item": [
+        {
+          "name": "POST - Criar cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const id = pm.response.json().id;",
+                  "  pm.collectionVariables.set('clienteId', id);",
+                  "  pm.test('Cliente criado — status 201', () => pm.response.to.have.status(201));",
+                  "  pm.test('Tipo é cliente', () => pm.expect(pm.response.json().tipo).to.eql('cliente'));",
+                  "  console.log('clienteId salvo:', id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/usuarios",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva\",\n  \"email\": \"joao@email.com\",\n  \"telefone\": \"31999990001\",\n  \"tipo\": \"cliente\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST - Criar lavador",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const id = pm.response.json().id;",
+                  "  pm.collectionVariables.set('lavadorId', id);",
+                  "  pm.test('Lavador criado — status 201', () => pm.response.to.have.status(201));",
+                  "  pm.test('Tipo é lavador', () => pm.expect(pm.response.json().tipo).to.eql('lavador'));",
+                  "  console.log('lavadorId salvo:', id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/usuarios",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Carlos Lavador\",\n  \"email\": \"carlos@lava.com\",\n  \"telefone\": \"31988880002\",\n  \"tipo\": \"lavador\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET - Listar todos usuários (apenas lavador)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{lavadorId}}", "description": "Exclusivo para lavadores — cliente recebe 403" }],
+            "url": "{{baseUrl}}/usuarios"
+          }
+        },
+        {
+          "name": "GET - Listar apenas lavadores (apenas lavador)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{lavadorId}}", "description": "Exclusivo para lavadores" }],
+            "url": "{{baseUrl}}/usuarios?tipo=lavador"
+          }
+        },
+        {
+          "name": "GET - Buscar usuários por nome (apenas lavador)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{lavadorId}}", "description": "Busca parcial, case-insensitive" }],
+            "url": "{{baseUrl}}/usuarios?nome=carlos"
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "status": "OK",
+              "code": 200,
+              "body": "{ \"total\": 1, \"dados\": [ { \"id\": \"uuid\", \"nome\": \"Carlos Lavador\", \"tipo\": \"lavador\" } ] }"
+            }
+          ]
+        },
+        {
+          "name": "GET - Buscar por nome e tipo combinados (apenas lavador)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{lavadorId}}" }],
+            "url": "{{baseUrl}}/usuarios?nome=carlos&tipo=lavador"
+          }
+        },
+        {
+          "name": "GET - Buscar usuário por ID (próprio ou lavador)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{clienteId}}", "description": "Cliente só acessa o próprio ID. Lavador acessa qualquer." }],
+            "url": "{{baseUrl}}/usuarios/{{clienteId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Veículos ( apenas cliente)",
+      "item": [
+        {
+          "name": "POST - Cadastrar veículo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const id = pm.response.json().id;",
+                  "  pm.collectionVariables.set('veiculoId', id);",
+                  "  pm.test('Veículo criado — status 201', () => pm.response.to.have.status(201));",
+                  "  console.log('veiculoId salvo:', id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{clienteId}}", "description": "Deve ser um cliente — lavador recebe 403" }
+            ],
+            "url": "{{baseUrl}}/veiculos",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usuario_id\": \"{{clienteId}}\",\n  \"placa\": \"ABC1D23\",\n  \"modelo\": \"Honda Civic\",\n  \"cor\": \"Prata\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET - Listar veículos do cliente",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{clienteId}}" }],
+            "url": "{{baseUrl}}/veiculos?usuario_id={{clienteId}}"
+          }
+        },
+        {
+          "name": "GET - Buscar veículo por ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{clienteId}}" }],
+            "url": "{{baseUrl}}/veiculos/{{veiculoId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Solicitações",
+      "item": [
+        {
+          "name": "POST - Criar solicitação (cliente)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const id = pm.response.json().id;",
+                  "  pm.collectionVariables.set('solicitacaoId', id);",
+                  "  pm.test('Criada — status 201', () => pm.response.to.have.status(201));",
+                  "  pm.test('Status inicial é pendente', () => pm.expect(pm.response.json().status).to.eql('pendente'));",
+                  "  console.log('solicitacaoId salvo:', id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{clienteId}}", "description": "Deve ser um cliente" }
+            ],
+            "url": "{{baseUrl}}/solicitacoes",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente_id\": \"{{clienteId}}\",\n  \"veiculo_id\": \"{{veiculoId}}\",\n  \"endereco\": \"Rua das Flores, 123 - Belo Horizonte/MG\",\n  \"tipo_servico\": \"completa\",\n  \"observacoes\": \"Carro sujo de barro, precisa de atenção especial\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET - Listar pendentes (lavador)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{lavadorId}}", "description": "Lavador vê solicitações pendentes" }],
+            "url": "{{baseUrl}}/solicitacoes?status=pendente"
+          }
+        },
+        {
+          "name": "GET - Listar por cliente (cliente)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{clienteId}}" }],
+            "url": "{{baseUrl}}/solicitacoes?cliente_id={{clienteId}}"
+          }
+        },
+        {
+          "name": "GET - Buscar por ID",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{clienteId}}" }],
+            "url": "{{baseUrl}}/solicitacoes/{{solicitacaoId}}"
+          }
+        },
+        {
+          "name": "PATCH - Lavador aceita (lavador)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{lavadorId}}", "description": "Deve ser o lavador" }
+            ],
+            "url": "{{baseUrl}}/solicitacoes/{{solicitacaoId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"aceita\",\n  \"lavador_id\": \"{{lavadorId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH - Lavador inicia execução (lavador)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{lavadorId}}" }
+            ],
+            "url": "{{baseUrl}}/solicitacoes/{{solicitacaoId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"em_execucao\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH - Lavador conclui serviço (lavador)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{lavadorId}}" }
+            ],
+            "url": "{{baseUrl}}/solicitacoes/{{solicitacaoId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"concluida\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PATCH - Cliente cancela (apenas cliente)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "x-usuario-id", "value": "{{clienteId}}", "description": "Só o cliente dono pode cancelar — lavador recebe 403" }
+            ],
+            "url": "{{baseUrl}}/solicitacoes/{{solicitacaoId}}/status",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"cancelada\"\n}"
+            }
+          }
+        },
+        {
+          "name": "GET - Histórico de status",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "x-usuario-id", "value": "{{clienteId}}" }],
+            "url": "{{baseUrl}}/solicitacoes/{{solicitacaoId}}/historico"
+          }
+        }
+      ]
+    }
+  ]
+}
