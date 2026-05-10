@@ -16,7 +16,7 @@ A arquitetura adota uma abordagem orientada a eventos (Event-Driven Architecture
 
 **Backend (Node.js / Express):** lógica central da aplicação organizada em Clean Architecture com camadas bem definidas — middlewares, routes, controllers, services e repositories. Responsável por publicar e consumir eventos do RabbitMQ.
 
-**Banco de dados (SQLite / PostgreSQL):** persistência relacional das informações. SQLite em desenvolvimento, PostgreSQL em produção.
+**Banco de dados (SQLite):** persistência relacional das informações. SQLite em desenvolvimento.
 
 **Mensageria (RabbitMQ):** orquestra os eventos da plataforma de forma assíncrona, desacoplando produtores e consumidores. Exchange `lavaja.solicitacoes` do tipo topic.
 
