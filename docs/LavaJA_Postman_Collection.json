@@ -135,7 +135,7 @@
       ]
     },
     {
-      "name": "2. Veículos ( apenas cliente)",
+      "name": "2. Veículos",
       "item": [
         {
           "name": "POST - Cadastrar veículo",
